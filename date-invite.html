@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Date2 Invite</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream: #fdf6ee;
+    --blush: #f2c4b8;
+    --rose: #d4776a;
+    --deep: #3b2a2a;
+    --gold: #c8a96e;
+    --soft: #f7ede4;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+
+  body::before, body::after {
+    content: '';
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.35;
+    pointer-events: none;
+    z-index: 0;
+  }
+  body::before {
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, #f2c4b8, #e8a89a);
+    top: -100px; right: -100px;
+  }
+  body::after {
+    width: 350px; height: 350px;
+    background: radial-gradient(circle, #c8a96e55, #f2c4b822);
+    bottom: -80px; left: -80px;
+  }
+
+  .screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 36px 28px;
+    width: min(100%, 420px);
+    position: relative;
+    z-index: 1;
+    animation: fadeUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .screen.active { display: flex; }
+
+  /* screen4 needs scroll since it has more content */
+  #screen4 {
+    overflow-y: auto;
+    max-height: 100dvh;
+    padding-bottom: 48px;
+    justify-content: flex-start;
+    padding-top: 48px;
+  }
+
+  /* activity screen also scrollable */
+  #screen_activity {
+    overflow-y: auto;
+    max-height: 100dvh;
+    padding-bottom: 48px;
+    justify-content: flex-start;
+    padding-top: 36px;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(28px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .emoji-big {
+    font-size: 58px;
+    margin-bottom: 20px;
+    display: block;
+    animation: bob 3s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  @keyframes bob {
+    0%, 100% { transform: translateY(0); }
+    50%       { transform: translateY(-8px); }
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(24px, 6.5vw, 32px);
+    color: var(--deep);
+    line-height: 1.25;
+    margin-bottom: 10px;
+  }
+  h1 em { font-style: italic; color: var(--rose); }
+
+  .subtitle {
+    font-size: 14px;
+    color: #9a7a72;
+    line-height: 1.6;
+    margin-bottom: 32px;
+    max-width: 300px;
+  }
+
+  /* ── YES / NO row ── */
+  .yesno-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    width: 100%;
+    max-width: 340px;
+    position: relative;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 15px 0;
+    width: 150px;
+    border: none;
+    border-radius: 60px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+
+  .btn-yes {
+    background: linear-gradient(135deg, var(--rose), #c45f52);
+    color: #fff;
+    box-shadow: 0 8px 24px #d4776a44;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .btn-yes:hover { box-shadow: 0 12px 32px #d4776a66; transform: translateY(-2px); }
+  .btn-yes:active { transform: scale(0.96); }
+
+  /* No button — fixed after first escape, initially in flow */
+  .btn-no {
+    background: #fff;
+    color: #9a7a72;
+    border: 1.5px solid #e0cec9;
+    font-size: 15px;
+    width: 150px;
+    padding: 15px 0;
+    transition: none;
+    z-index: 999;
+  }
+  .btn-no.escaped {
+    position: fixed;
+  }
+
+  .btn-gold {
+    background: linear-gradient(135deg, var(--gold), #b8924e);
+    color: #fff;
+    box-shadow: 0 8px 24px #c8a96e44;
+    width: auto;
+    padding: 15px 32px;
+    border-radius: 60px;
+    font-size: 15px;
+    transition: transform 0.15s, box-shadow 0.15s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+  }
+  .btn-gold:hover { box-shadow: 0 12px 32px #c8a96e66; transform: translateY(-2px); }
+
+  /* ── Day cards ── */
+  .day-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 320px;
+    margin-bottom: 8px;
+  }
+  .day-card {
+    background: #fff;
+    border: 2px solid #f0e4df;
+    border-radius: 18px;
+    padding: 18px 22px;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+  .day-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #f9efea, #fdf4f0);
+    opacity: 0;
+    transition: opacity 0.2s;
+    border-radius: 16px;
+  }
+  .day-card:hover, .day-card.selected {
+    border-color: var(--rose);
+    box-shadow: 0 6px 20px #d4776a22;
+    transform: translateY(-2px);
+  }
+  .day-card.selected::before { opacity: 1; }
+  .day-card .day-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 19px;
+    color: var(--deep);
+    position: relative;
+  }
+  .day-card .day-date {
+    font-size: 13px;
+    color: #b0908a;
+    margin-top: 3px;
+    position: relative;
+  }
+
+  /* ── Time chips ── */
+  .time-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+    width: 100%;
+    max-width: 320px;
+    margin-bottom: 8px;
+  }
+  .time-chip {
+    background: #fff;
+    border: 2px solid #f0e4df;
+    border-radius: 50px;
+    padding: 13px 10px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--deep);
+    cursor: pointer;
+    transition: all 0.18s;
+    text-align: center;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .time-chip:hover, .time-chip.selected {
+    border-color: var(--rose);
+    background: linear-gradient(135deg, #fdf0ec, #fdf6ee);
+    color: var(--rose);
+  }
+
+  /* ── Activity cards ── */
+  .activity-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    max-width: 340px;
+    margin-bottom: 16px;
+  }
+  .activity-card {
+    background: #fff;
+    border: 2px solid #f0e4df;
+    border-radius: 16px;
+    padding: 14px 18px;
+    cursor: pointer;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+  .activity-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #fdf0ec, #fdf9f7);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .activity-card:hover, .activity-card.selected {
+    border-color: var(--rose);
+    box-shadow: 0 5px 18px #d4776a20;
+    transform: translateY(-1px);
+  }
+  .activity-card.selected::before { opacity: 1; }
+  .activity-card .act-icon { font-size: 28px; flex-shrink: 0; position: relative; }
+  .activity-card .act-text { position: relative; }
+  .activity-card .act-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 15px;
+    color: var(--deep);
+    font-weight: 400;
+  }
+  .activity-card .act-desc {
+    font-size: 12px;
+    color: #b0908a;
+    margin-top: 2px;
+  }
+
+  /* weather link */
+  .weather-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--rose);
+    text-decoration: none;
+    border: 1.5px solid var(--blush);
+    border-radius: 50px;
+    padding: 8px 16px;
+    background: #fff;
+    margin-bottom: 20px;
+    transition: background 0.15s;
+    font-weight: 500;
+  }
+  .weather-link:hover { background: #fdf0ec; }
+
+  /* ── Confirmed card ── */
+  .confirmed-card {
+    background: #fff;
+    border-radius: 24px;
+    padding: 28px 24px;
+    box-shadow: 0 16px 50px #d4776a15;
+    width: 100%;
+    max-width: 340px;
+    margin-bottom: 24px;
+    border: 1.5px solid #f5e4de;
+    flex-shrink: 0;
+  }
+  .confirmed-card .detail-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 0;
+    border-bottom: 1px solid #f5ede9;
+    font-size: 14px;
+    color: var(--deep);
+  }
+  .confirmed-card .detail-row:last-child { border-bottom: none; }
+  .confirmed-card .detail-row .icon { font-size: 20px; flex-shrink: 0; }
+  .confirmed-card .detail-row strong { display: block; font-weight: 500; }
+  .confirmed-card .detail-row span { color: #9a7a72; font-size: 12px; }
+
+  /* confetti */
+  .confetti-burst {
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none; z-index: 100;
+  }
+  .confetti-piece {
+    position: absolute;
+    border-radius: 2px;
+    animation: confettiFall linear forwards;
+  }
+  @keyframes confettiFall {
+    0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  }
+
+  /* floating hearts */
+  .hearts { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+  .heart {
+    position: absolute;
+    opacity: 0.1;
+    animation: floatHeart linear infinite;
+  }
+  @keyframes floatHeart {
+    from { transform: translateY(110vh) rotate(-15deg); opacity: 0.1; }
+    to   { transform: translateY(-10vh) rotate(15deg); opacity: 0; }
+  }
+
+  /* ── Distance watermark ── */
+  .watermark {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.06;
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #c8a08a;
+    margin-bottom: 14px;
+  }
+</style>
+</head>
+<body>
+
+<div class="hearts" id="hearts"></div>
+
+<!-- Distance watermark -->
+<svg class="watermark" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+  <defs>
+    <style>
+      .wm-state {
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: 18px;
+        font-weight: 700;
+        font-style: italic;
+        fill: #3b2a2a;
+      }
+    </style>
+    <!-- The curved path from top-left to bottom-right that dashes follow -->
+    <path id="curvePath" d="M 38,28 Q 260,80 362,372" fill="none"/>
+  </defs>
+
+  <!-- Ohio top-left -->
+  <text x="12" y="24" class="wm-state">Ohio</text>
+
+  <!-- Florida bottom-right -->
+  <text x="318" y="396" class="wm-state">Florida</text>
+
+  <!-- 30 dashes distributed along the curve -->
+  <g fill="#3b2a2a">
+    <rect transform="translate(42,30) rotate(14)"  width="6" height="2" rx="1"/>
+    <rect transform="translate(56,33) rotate(14)"  width="6" height="2" rx="1"/>
+    <rect transform="translate(71,37) rotate(15)"  width="6" height="2" rx="1"/>
+    <rect transform="translate(86,41) rotate(15)"  width="6" height="2" rx="1"/>
+    <rect transform="translate(101,46) rotate(16)" width="6" height="2" rx="1"/>
+    <rect transform="translate(116,51) rotate(16)" width="6" height="2" rx="1"/>
+    <rect transform="translate(131,56) rotate(17)" width="6" height="2" rx="1"/>
+    <rect transform="translate(146,61) rotate(18)" width="6" height="2" rx="1"/>
+    <rect transform="translate(161,66) rotate(18)" width="6" height="2" rx="1"/>
+    <rect transform="translate(176,71) rotate(19)" width="6" height="2" rx="1"/>
+    <rect transform="translate(191,77) rotate(20)" width="6" height="2" rx="1"/>
+    <rect transform="translate(206,83) rotate(21)" width="6" height="2" rx="1"/>
+    <rect transform="translate(220,89) rotate(22)" width="6" height="2" rx="1"/>
+    <rect transform="translate(234,96) rotate(23)" width="6" height="2" rx="1"/>
+    <rect transform="translate(247,104) rotate(25)" width="6" height="2" rx="1"/>
+    <rect transform="translate(259,112) rotate(27)" width="6" height="2" rx="1"/>
+    <rect transform="translate(270,121) rotate(29)" width="6" height="2" rx="1"/>
+    <rect transform="translate(280,131) rotate(31)" width="6" height="2" rx="1"/>
+    <rect transform="translate(289,142) rotate(33)" width="6" height="2" rx="1"/>
+    <rect transform="translate(297,154) rotate(35)" width="6" height="2" rx="1"/>
+    <rect transform="translate(304,167) rotate(38)" width="6" height="2" rx="1"/>
+    <rect transform="translate(310,180) rotate(40)" width="6" height="2" rx="1"/>
+    <rect transform="translate(315,194) rotate(43)" width="6" height="2" rx="1"/>
+    <rect transform="translate(319,209) rotate(46)" width="6" height="2" rx="1"/>
+    <rect transform="translate(323,224) rotate(49)" width="6" height="2" rx="1"/>
+    <rect transform="translate(326,240) rotate(52)" width="6" height="2" rx="1"/>
+    <rect transform="translate(329,256) rotate(55)" width="6" height="2" rx="1"/>
+    <rect transform="translate(333,273) rotate(58)" width="6" height="2" rx="1"/>
+    <rect transform="translate(337,290) rotate(61)" width="6" height="2" rx="1"/>
+    <rect transform="translate(341,308) rotate(64)" width="6" height="2" rx="1"/>
+  </g>
+</svg>
+
+<!-- ══════════════ SCREEN 1 — The Question ══════════════ -->
+<div class="screen active" id="screen1">
+  <span class="emoji-big">📅</span>
+  <h1>Before you leave for Ohio…<br>I'd love to take you out again 😊</h1>
+  <p class="subtitle">Accept invitation?</p>
+  <div class="yesno-row" id="yesnoRow">
+    <button class="btn btn-yes" onclick="goToScreen2()">Yes!</button>
+    <button class="btn btn-no" id="noBtn" onmouseenter="runAway()" ontouchstart="runAway(event)">Nope</button>
+  </div>
+</div>
+
+<!-- ══════════════ SCREEN 2 — Pick a Day ══════════════ -->
+<div class="screen" id="screen2">
+  <span class="emoji-big">📅</span>
+  <h1>Which day <em>works</em> for you?</h1>
+  <p class="subtitle">Pick whichever fits your schedule</p>
+  <div class="day-cards">
+    <div class="day-card" id="day1" onclick="selectDay(0)">
+      <div class="day-name">Monday</div>
+      <div class="day-date">June 9th</div>
+    </div>
+    <div class="day-card" id="day2" onclick="selectDay(1)">
+      <div class="day-name">Tuesday</div>
+      <div class="day-date">June 10th</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ SCREEN 3 — Pick a Time ══════════════ -->
+<div class="screen" id="screen3">
+  <span class="emoji-big">⏰</span>
+  <h1>What <em>time</em> works best?</h1>
+  <p class="subtitle" id="screen3subtitle">Pick a time slot</p>
+  <div class="time-grid" id="timeGrid"></div>
+</div>
+
+<!-- ══════════════ SCREEN 3.5 — Pick an Activity ══════════════ -->
+<div class="screen" id="screen_activity">
+  <span class="emoji-big">✨</span>
+  <h1>What sounds <em>fun</em> to you?</h1>
+  <p class="subtitle">Pick whatever vibe you're feeling</p>
+
+  <a class="weather-link" id="weatherLink" href="#" target="_blank">
+    🌤️ In case you want to check the weather
+  </a>
+
+  <div class="activity-grid">
+    <div class="activity-card" onclick="selectActivity(this, 'Beach Date 🏖️')">
+      <span class="act-icon">🏖️</span>
+      <div class="act-text">
+        <div class="act-name">Beach Date</div>
+      </div>
+    </div>
+    <div class="activity-card" onclick="selectActivity(this, 'Sunset + Food Beach Date 🌅')">
+      <span class="act-icon">🌅</span>
+      <div class="act-text">
+        <div class="act-name">Sunset + Food Beach Date</div>
+      </div>
+    </div>
+    <div class="activity-card" onclick="selectActivity(this, 'Ice Cream 🍦')">
+      <span class="act-icon">🍦</span>
+      <div class="act-text">
+        <div class="act-name">Ice Cream</div>
+      </div>
+    </div>
+    <div class="activity-card" onclick="selectActivity(this, 'Dinner 🍽️')">
+      <span class="act-icon">🍽️</span>
+      <div class="act-text">
+        <div class="act-name">Dinner</div>
+      </div>
+    </div>
+    <div class="activity-card" onclick="selectActivity(this, 'Walk + Smoothie / 7Brew / Açaí 🥤')">
+      <span class="act-icon">🥤</span>
+      <div class="act-text">
+        <div class="act-name">Walk + Smoothie / 7Brew / Açaí</div>
+      </div>
+    </div>
+    <div class="activity-card" onclick="selectActivity(this, 'First Loss at Popstroke + Dessert 🏌️')">
+      <span class="act-icon">🏌️</span>
+      <div class="act-text">
+        <div class="act-name">First Loss at Popstroke + Dessert</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ SCREEN 4 — Confirmed ══════════════ -->
+<div class="screen" id="screen4">
+  <span class="emoji-big">🎉</span>
+  <h1>It's a <em>date!</em></h1>
+  <p class="subtitle">Can't wait to see you ✨</p>
+  <div class="confirmed-card">
+    <div class="detail-row">
+      <span class="icon">📅</span>
+      <div><strong id="confirmedDay">—</strong><span>Day</span></div>
+    </div>
+    <div class="detail-row">
+      <span class="icon">⏰</span>
+      <div><strong id="confirmedTime">—</strong><span>Time</span></div>
+    </div>
+    <div class="detail-row">
+      <span class="icon">✨</span>
+      <div><strong id="confirmedActivity">—</strong><span>Activity</span></div>
+    </div>
+    <div class="detail-row">
+      <span class="icon">📍</span>
+      <div><strong>TBD — it'll be worth it</strong><span>Location</span></div>
+    </div>
+  </div>
+  <a class="btn btn-gold" id="calLink" href="#" target="_blank">
+    📆 Add to Calendar
+  </a>
+</div>
+
+<div class="confetti-burst" id="confetti"></div>
+
+<script>
+// ─────────────────────────────────────────────
+//  CONFIG
+// ─────────────────────────────────────────────
+const DATE_TITLE    = "Our Date 💛";
+const DATE_DETAILS  = "Can't wait!";
+const DATE_LOCATION = "Bradenton / Sarasota, FL";
+
+// Hardcoded days
+const DAY_OPTIONS = [
+  { label: "Monday, June 9th",  date: new Date(2025, 5, 9)  },
+  { label: "Tuesday, June 10th", date: new Date(2025, 5, 10) },
+];
+
+const TIME_SLOTS = [
+  { label: "9:00 AM",  hour: 9,  minute: 0 },
+  { label: "10:00 AM", hour: 10, minute: 0 },
+  { label: "11:00 AM", hour: 11, minute: 0 },
+  { label: "12:00 PM", hour: 12, minute: 0 },
+  { label: "1:00 PM",  hour: 13, minute: 0 },
+  { label: "2:00 PM",  hour: 14, minute: 0 },
+  { label: "3:00 PM",  hour: 15, minute: 0 },
+  { label: "4:00 PM",  hour: 16, minute: 0 },
+  { label: "5:00 PM",  hour: 17, minute: 0 },
+  { label: "6:00 PM",  hour: 18, minute: 0 },
+  { label: "7:00 PM",  hour: 19, minute: 0 },
+  { label: "8:00 PM",  hour: 20, minute: 0 },
+];
+
+let selectedDay      = null;
+let selectedDayLabel = null;
+let selectedTime     = null;
+let selectedActivity = null;
+
+// ─────────────────────────────────────────────
+//  Screen transitions
+// ─────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.remove('active');
+    s.style.display = 'none';
+  });
+  const el = document.getElementById(id);
+  el.style.display = 'flex';
+  el.classList.remove('active');
+  void el.offsetWidth;
+  el.classList.add('active');
+  el.scrollTop = 0;
+}
+
+function goToScreen2() { showScreen('screen2'); }
+
+function selectDay(index) {
+  selectedDay      = DAY_OPTIONS[index].date;
+  selectedDayLabel = DAY_OPTIONS[index].label;
+
+  document.querySelectorAll('.day-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('day' + (index + 1)).classList.add('selected');
+
+  document.getElementById('screen3subtitle').textContent = `For ${selectedDayLabel}`;
+
+  // Build time chips
+  const grid = document.getElementById('timeGrid');
+  grid.innerHTML = '';
+  TIME_SLOTS.forEach((t, i) => {
+    const chip = document.createElement('button');
+    chip.className = 'time-chip';
+    chip.textContent = t.label;
+    chip.onclick = () => selectTime(i, chip);
+    grid.appendChild(chip);
+  });
+
+  setTimeout(() => showScreen('screen3'), 180);
+}
+
+function selectTime(index, el) {
+  selectedTime = TIME_SLOTS[index];
+  document.querySelectorAll('.time-chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+
+  // Set weather link to Bradenton/Sarasota area 10-day forecast
+  const weatherUrl = `https://forecast.weather.gov/MapClick.php?CityName=Bradenton&state=FL&site=TBW&textField1=27.4989&textField2=-82.5748`;
+  document.getElementById('weatherLink').href = weatherUrl;
+
+  setTimeout(() => showScreen('screen_activity'), 280);
+}
+
+function selectActivity(el, name) {
+  selectedActivity = name;
+  document.querySelectorAll('.activity-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  setTimeout(() => confirmDate(), 260);
+}
+
+function confirmDate() {
+  document.getElementById('confirmedDay').textContent      = selectedDayLabel;
+  document.getElementById('confirmedTime').textContent     = selectedTime.label;
+  document.getElementById('confirmedActivity').textContent = selectedActivity;
+
+  // Google Calendar link
+  const start = new Date(selectedDay);
+  start.setHours(selectedTime.hour, selectedTime.minute, 0);
+  const end = new Date(start);
+  end.setHours(start.getHours() + 3);
+
+  const fmt = d => d.toISOString().replace(/[-:]/g,'').split('.')[0] + 'Z';
+  const calUrl = `https://www.google.com/calendar/render?action=TEMPLATE`
+    + `&text=${encodeURIComponent(DATE_TITLE + ' — ' + selectedActivity)}`
+    + `&dates=${fmt(start)}/${fmt(end)}`
+    + `&details=${encodeURIComponent(DATE_DETAILS)}`
+    + `&location=${encodeURIComponent(DATE_LOCATION)}`;
+
+  document.getElementById('calLink').href = calUrl;
+
+  // Silently notify Carlos by email via Formspree
+  fetch('https://formspree.io/f/mkoagvzk', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify({
+      day:      selectedDayLabel,
+      time:     selectedTime.label,
+      activity: selectedActivity
+    })
+  }).catch(() => {});
+
+  showScreen('screen4');
+  launchConfetti();
+}
+
+// ─────────────────────────────────────────────
+//  Runaway "No" button
+//  — tries 1–3: nudges close to original spot
+//  — try 4: fades out and disappears
+// ─────────────────────────────────────────────
+const noBtn = document.getElementById('noBtn');
+let noBtnX  = null;
+let noBtnY  = null;
+let runCount = 0;
+
+function initNoBtn() {
+  const rect = noBtn.getBoundingClientRect();
+  noBtnX = rect.left;
+  noBtnY = rect.top;
+  noBtn.classList.add('escaped');
+  noBtn.style.left = noBtnX + 'px';
+  noBtn.style.top  = noBtnY + 'px';
+  noBtn.style.width = rect.width + 'px';
+}
+
+function runAway() {
+  if (noBtnX === null) initNoBtn();
+  runCount++;
+
+  if (runCount >= 6) {
+    // Disappear
+    noBtn.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+    noBtn.style.opacity = '0';
+    noBtn.style.transform = 'scale(0.6)';
+    setTimeout(() => { noBtn.style.display = 'none'; }, 320);
+    return;
+  }
+
+  const btnW = noBtn.offsetWidth;
+  const btnH = noBtn.offsetHeight;
+  const screenW = window.innerWidth;
+  const screenH = window.innerHeight;
+
+  // Stay within ~90px of where it started
+  const anchorX = noBtnX, anchorY = noBtnY;
+  let nx, ny, tries = 0;
+  do {
+    nx = anchorX + (Math.random() - 0.5) * 140;
+    ny = anchorY + (Math.random() - 0.5) * 120;
+    nx = Math.max(8, Math.min(screenW - btnW - 8, nx));
+    ny = Math.max(8, Math.min(screenH - btnH - 8, ny));
+    tries++;
+  } while (tries < 20 && Math.hypot(nx - noBtnX, ny - noBtnY) < 40);
+
+  noBtnX = nx;
+  noBtnY = ny;
+
+  noBtn.style.transition = `left 0.2s cubic-bezier(0.22,1,0.36,1), top 0.2s cubic-bezier(0.22,1,0.36,1)`;
+  noBtn.style.left = noBtnX + 'px';
+  noBtn.style.top  = noBtnY + 'px';
+}
+
+noBtn.addEventListener('click',      e => { e.preventDefault(); runAway(); });
+noBtn.addEventListener('touchstart', e => { e.preventDefault(); runAway(); }, { passive: false });
+
+// ─────────────────────────────────────────────
+//  Confetti
+// ─────────────────────────────────────────────
+const CONFETTI_COLORS = ['#d4776a','#f2c4b8','#c8a96e','#f7ede4','#e8a89a','#ffffff'];
+function launchConfetti() {
+  const c = document.getElementById('confetti');
+  c.innerHTML = '';
+  for (let i = 0; i < 80; i++) {
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    p.style.cssText = `
+      left:${Math.random()*100}%;
+      background:${CONFETTI_COLORS[Math.floor(Math.random()*CONFETTI_COLORS.length)]};
+      width:${Math.random()*9+4}px;
+      height:${Math.random()*9+4}px;
+      border-radius:${Math.random()>.5?'50%':'2px'};
+      animation-duration:${Math.random()*2+1.4}s;
+      animation-delay:${Math.random()*.9}s;
+    `;
+    c.appendChild(p);
+  }
+  setTimeout(() => { c.innerHTML = ''; }, 4500);
+}
+
+// ─────────────────────────────────────────────
+//  Floating hearts
+// ─────────────────────────────────────────────
+const HC = document.getElementById('hearts');
+['🌹','💛','✨','🌸','💫','🍦'].forEach((e, i) => {
+  for (let j = 0; j < 2; j++) {
+    const h = document.createElement('div');
+    h.className = 'heart';
+    h.textContent = e;
+    h.style.cssText = `
+      left:${Math.random()*100}%;
+      animation-duration:${Math.random()*12+9}s;
+      animation-delay:-${Math.random()*18}s;
+      font-size:${Math.random()*10+10}px;
+    `;
+    HC.appendChild(h);
+  }
+});
+</script>
+</body>
+</html>
